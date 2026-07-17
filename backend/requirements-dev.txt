@@ -1,0 +1,5 @@
+-r requirements.txt
+ruff>=0.9
+pytest>=8.3
+pytest-django>=4.9
+django-debug-toolbar>=4.4
