@@ -1,0 +1,37 @@
+# Dependencies
+node_modules/
+.venv/
+__pycache__/
+*.py[cod]
+
+# Builds
+.next/
+out/
+dist/
+build/
+staticfiles/
+
+# Env
+.env
+.env.local
+.env*.local
+!.env.example
+
+# Logs & caches
+*.log
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.turbo/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# Misc
+coverage/
+*.tsbuildinfo
+next-env.d.ts
