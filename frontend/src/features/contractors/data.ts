@@ -1,0 +1,85 @@
+/** Realistic dummy data for the contractors page. Swaps to the API layer later. */
+
+import type { Contractor } from "./types";
+
+export const contractors: Contractor[] = [
+  {
+    id: "con_01",
+    name: "Rohan Sharma",
+    company: "Sharma Plumbing",
+    trade: "Plumbing",
+    rating: 4.8,
+    phone: "+91 98450 2148",
+    email: "rohan@sharmaplumbing.in",
+    specialties: ["Repiping", "Fixtures"],
+    totalPaid: 389000,
+    status: "on-site",
+  },
+  {
+    id: "con_02",
+    name: "Priya Kumar",
+    company: "Kumar Mechanical",
+    trade: "HVAC",
+    rating: 4.9,
+    phone: "+91 98450 2173",
+    email: "priya@kumarmechanical.in",
+    specialties: ["Ductwork", "Heat pumps"],
+    totalPaid: 412000,
+    status: "scheduled",
+  },
+  {
+    id: "con_03",
+    name: "Deepak Nair",
+    company: "Volt Electric",
+    trade: "Electrical",
+    rating: 4.6,
+    phone: "+91 98450 2126",
+    email: "deepak@voltelectric.in",
+    specialties: ["Panel upgrades", "Lighting"],
+    totalPaid: 398000,
+    status: "on-site",
+  },
+  {
+    id: "con_04",
+    name: "Sameer Bhat",
+    company: "OakLine Carpentry",
+    trade: "Carpentry",
+    rating: 4.7,
+    phone: "+91 98450 2192",
+    email: "sameer@oaklinecarpentry.in",
+    specialties: ["Framing", "Cabinetry"],
+    totalPaid: 524000,
+    status: "on-site",
+  },
+  {
+    id: "con_05",
+    name: "Anita Rao",
+    company: "StoneWorks Masonry",
+    trade: "Masonry",
+    rating: 4.5,
+    phone: "+91 98450 2164",
+    email: "anita@stoneworksmasonry.in",
+    specialties: ["Stone veneer", "Flatwork"],
+    totalPaid: 346000,
+    status: "scheduled",
+  },
+  {
+    id: "con_06",
+    name: "Vikram Singh",
+    company: "Summit Roofing",
+    trade: "Roofing",
+    rating: 4.8,
+    phone: "+91 98450 2187",
+    email: "vikram@summitroofing.in",
+    specialties: ["Shingles", "Flashing"],
+    totalPaid: 287500,
+    status: "completed",
+  },
+];
+
+export const contractorStats = {
+  active: contractors.filter((c) => c.status !== "completed").length,
+  totalPaid: contractors.reduce((sum, c) => sum + c.totalPaid, 0),
+  avgRating:
+    Math.round((contractors.reduce((sum, c) => sum + c.rating, 0) / contractors.length) * 10) / 10,
+};
