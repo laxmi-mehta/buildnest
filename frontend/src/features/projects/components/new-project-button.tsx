@@ -4,8 +4,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { toast } from "sonner";
-import { Plus } from "lucide-react";
+import { Loader2, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -25,25 +24,33 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import { useCreateProject } from "@/features/projects/hooks";
 
 const schema = z.object({
   name: z.string().min(2, "Give the project a name"),
-  address: z.string().min(5, "Enter the site address"),
-  budget: z.coerce.number<number>().positive("Budget must be positive"),
+  city: z.string().min(2, "Enter the city"),
+  address: z.string().optional(),
+  total_budget: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof schema>;
 
 export function NewProjectButton() {
   const [open, setOpen] = useState(false);
+  const { mutate: create, isPending } = useCreateProject({ onSuccess: () => setOpen(false) });
+
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: { name: "", address: "", budget: 0 },
+    defaultValues: { name: "", city: "Bengaluru", address: "", total_budget: "" },
   });
 
   const onSubmit = (values: FormValues) => {
-    toast.success(`Project “${values.name}” created`);
-    setOpen(false);
+    create({
+      name: values.name,
+      city: values.city,
+      address: values.address,
+      total_budget: values.total_budget ? Number(values.total_budget) : null,
+    });
     form.reset();
   };
 
@@ -58,7 +65,7 @@ export function NewProjectButton() {
         <DialogHeader>
           <DialogTitle>New project</DialogTitle>
           <DialogDescription>
-            Set up a new construction project. You can refine details later.
+            Set up a new construction project. You can fill in more details later.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -70,12 +77,46 @@ export function NewProjectButton() {
                 <FormItem>
                   <FormLabel>Project name</FormLabel>
                   <FormControl>
-                    <Input placeholder="Willow Creek Residence" {...field} />
+                    <Input placeholder="Mehta Residence" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="city"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>City</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Bengaluru" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="total_budget"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Budget (INR)</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        min={0}
+                        step={100000}
+                        placeholder="48,00,000"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
             <FormField
               control={form.control}
               name="address"
@@ -83,20 +124,7 @@ export function NewProjectButton() {
                 <FormItem>
                   <FormLabel>Site address</FormLabel>
                   <FormControl>
-                    <Input placeholder="42 Willow Creek Layout, Whitefield, Bengaluru" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="budget"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Total budget (INR)</FormLabel>
-                  <FormControl>
-                    <Input type="number" min={0} step={1000} {...field} />
+                    <Input placeholder="42 Indiranagar, Bengaluru" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -106,7 +134,10 @@ export function NewProjectButton() {
               <Button type="button" variant="outline" onClick={() => setOpen(false)}>
                 Cancel
               </Button>
-              <Button type="submit">Create project</Button>
+              <Button type="submit" disabled={isPending}>
+                {isPending && <Loader2 className="size-4 animate-spin" />}
+                Create project
+              </Button>
             </DialogFooter>
           </form>
         </Form>

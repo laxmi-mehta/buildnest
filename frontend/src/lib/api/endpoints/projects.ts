@@ -1,36 +1,22 @@
-import { mockResponse, type Paginated } from "../client";
-import { projects, type ProjectSummary } from "@/features/projects/data";
+import { apiClient, type Paginated } from "../client";
+import type { ApiProject, ApiProjectList, CreateProjectInput } from "../types";
 
-/**
- * Project endpoint signatures. NO real implementation — resolves dummy data
- * until the Django API ships. Call sites stay unchanged when it does.
- */
-
-/** GET /projects/ */
-export function listProjects(): Promise<Paginated<ProjectSummary>> {
-  return mockResponse({
-    count: projects.length,
-    next: null,
-    previous: null,
-    results: projects,
-  });
+export function listProjects(): Promise<Paginated<ApiProjectList>> {
+  return apiClient("/projects/");
 }
 
-/** GET /projects/:id/ */
-export function getProject(id: string): Promise<ProjectSummary | undefined> {
-  return mockResponse(projects.find((p) => p.id === id));
+export function getProject(id: number): Promise<ApiProject> {
+  return apiClient(`/projects/${id}/`);
 }
 
-/** POST /projects/ */
-export function createProject(
-  input: Pick<ProjectSummary, "name" | "address" | "budget">
-): Promise<ProjectSummary> {
-  return mockResponse({
-    ...projects[0],
-    id: `prj_${Math.random().toString(36).slice(2, 8)}`,
-    ...input,
-    status: "planning",
-    progressPercent: 0,
-    spent: 0,
-  });
+export function createProject(input: CreateProjectInput): Promise<ApiProject> {
+  return apiClient("/projects/", { method: "POST", body: input });
+}
+
+export function updateProject(id: number, input: Partial<CreateProjectInput>): Promise<ApiProject> {
+  return apiClient(`/projects/${id}/`, { method: "PATCH", body: input });
+}
+
+export function deleteProject(id: number): Promise<void> {
+  return apiClient(`/projects/${id}/`, { method: "DELETE" });
 }

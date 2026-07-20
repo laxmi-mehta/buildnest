@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
-import { Plus } from "lucide-react";
+import { Loader2, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -32,30 +32,66 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useCreateContractor } from "@/features/contractors/hooks";
+import { useProjectStore } from "@/lib/store/project-store";
+import type { ApiContractor } from "@/lib/api/types";
 
-const trades = ["Plumbing", "HVAC", "Electrical", "Carpentry", "Masonry", "Roofing", "General"];
+const TRADES: { value: ApiContractor["trade"]; label: string }[] = [
+  { value: "architect", label: "Architect" },
+  { value: "civil_engineer", label: "Civil Engineer" },
+  { value: "interior_designer", label: "Interior Designer" },
+  { value: "electrician", label: "Electrician" },
+  { value: "plumber", label: "Plumber" },
+  { value: "carpenter", label: "Carpenter" },
+  { value: "painter", label: "Painter" },
+  { value: "mason", label: "Mason" },
+  { value: "general", label: "General Contractor" },
+];
 
 const schema = z.object({
   name: z.string().min(2, "Enter a contact name"),
-  company: z.string().min(2, "Enter a company name"),
+  company: z.string().optional(),
   trade: z.string().min(1, "Pick a trade"),
-  phone: z.string().min(7, "Enter a phone number"),
-  email: z.email("Enter a valid email address"),
+  phone: z.string().optional(),
+  email: z.email("Enter a valid email address").or(z.literal("")),
+  contract_amount: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof schema>;
 
 export function AddContractorDialog() {
   const [open, setOpen] = useState(false);
+  const { activeProjectId } = useProjectStore();
+  const { mutate: create, isPending } = useCreateContractor(activeProjectId);
+
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: { name: "", company: "", trade: "", phone: "", email: "" },
+    defaultValues: { name: "", company: "", trade: "", phone: "", email: "", contract_amount: "" },
   });
 
   const onSubmit = (values: FormValues) => {
-    toast.success(`${values.company} added to contractors`);
-    setOpen(false);
-    form.reset();
+    if (!activeProjectId) {
+      toast.error("Select a project first from the Projects page");
+      return;
+    }
+    create(
+      {
+        project: activeProjectId,
+        name: values.name,
+        trade: values.trade as ApiContractor["trade"],
+        company: values.company,
+        phone: values.phone,
+        email: values.email || undefined,
+        contract_amount: values.contract_amount ? Number(values.contract_amount) : null,
+      },
+      {
+        onSuccess: () => {
+          toast.success(`${values.name} added to contractors`);
+          form.reset();
+          setOpen(false);
+        },
+      }
+    );
   };
 
   return (
@@ -68,7 +104,11 @@ export function AddContractorDialog() {
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Add contractor</DialogTitle>
-          <DialogDescription>Add a new contractor to your project directory.</DialogDescription>
+          <DialogDescription>
+            {activeProjectId
+              ? "Add a trade partner to the active project."
+              : "Select a project first from the Projects page."}
+          </DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -91,7 +131,7 @@ export function AddContractorDialog() {
                 name="company"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Company</FormLabel>
+                    <FormLabel>Company (optional)</FormLabel>
                     <FormControl>
                       <Input placeholder="e.g. Sharma Plumbing" {...field} />
                     </FormControl>
@@ -113,9 +153,9 @@ export function AddContractorDialog() {
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {trades.map((trade) => (
-                        <SelectItem key={trade} value={trade}>
-                          {trade}
+                      {TRADES.map((t) => (
+                        <SelectItem key={t.value} value={t.value}>
+                          {t.label}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -124,25 +164,40 @@ export function AddContractorDialog() {
                 </FormItem>
               )}
             />
-            <FormField
-              control={form.control}
-              name="phone"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Phone</FormLabel>
-                  <FormControl>
-                    <Input type="tel" placeholder="+91 98450 2100" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="phone"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Phone (optional)</FormLabel>
+                    <FormControl>
+                      <Input type="tel" placeholder="+91 98450 2100" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="contract_amount"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Contract (INR, optional)</FormLabel>
+                    <FormControl>
+                      <Input type="number" min={0} step={1000} placeholder="0" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
             <FormField
               control={form.control}
               name="email"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Email</FormLabel>
+                  <FormLabel>Email (optional)</FormLabel>
                   <FormControl>
                     <Input type="email" placeholder="name@company.com" {...field} />
                   </FormControl>
@@ -154,7 +209,10 @@ export function AddContractorDialog() {
               <Button type="button" variant="outline" onClick={() => setOpen(false)}>
                 Cancel
               </Button>
-              <Button type="submit">Add contractor</Button>
+              <Button type="submit" disabled={isPending || !activeProjectId}>
+                {isPending && <Loader2 className="size-4 animate-spin" />}
+                Add contractor
+              </Button>
             </DialogFooter>
           </form>
         </Form>

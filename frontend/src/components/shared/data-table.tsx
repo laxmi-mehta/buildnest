@@ -40,7 +40,7 @@ interface DataTableProps<T> {
  * Deliberately dependency-free; swaps to server-driven pagination when the
  * real API lands without changing call sites.
  */
-export function DataTable<T extends { id: string }>({
+export function DataTable<T extends { id: string | number }>({
   columns,
   data,
   searchKeys,

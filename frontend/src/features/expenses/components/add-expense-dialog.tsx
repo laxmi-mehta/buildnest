@@ -5,7 +5,7 @@ import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
-import { Plus } from "lucide-react";
+import { Loader2, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -26,8 +26,25 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { DatePicker } from "@/components/shared/date-picker";
-import { expenseCategories } from "@/features/expenses/data";
+import { useCreateExpense } from "@/features/expenses/hooks";
+import { useProjectStore } from "@/lib/store/project-store";
 import { formatCurrency } from "@/lib/utils";
+
+const CATEGORIES = [
+  { value: "materials", label: "Materials" },
+  { value: "labor", label: "Labour" },
+  { value: "design", label: "Design & Architecture" },
+  { value: "permits", label: "Permits & Approvals" },
+  { value: "equipment", label: "Equipment" },
+  { value: "misc", label: "Miscellaneous" },
+] as const;
+
+const PAYMENT_METHODS = [
+  { value: "cash", label: "Cash" },
+  { value: "upi", label: "UPI" },
+  { value: "bank_transfer", label: "Bank Transfer" },
+  { value: "cheque", label: "Cheque" },
+] as const;
 
 const schema = z.object({
   description: z.string().min(3, "Describe the expense"),
@@ -36,7 +53,8 @@ const schema = z.object({
     .min(1, "Enter an amount")
     .refine((v) => Number(v) > 0, "Enter a valid amount"),
   category: z.string().min(1, "Pick a category"),
-  vendor: z.string().min(2, "Enter a vendor"),
+  payee: z.string().optional(),
+  payment_method: z.string().min(1),
   date: z.date({ error: "Pick a date" }),
 });
 
@@ -50,6 +68,9 @@ function FieldError({ message }: { message?: string }) {
 export function AddExpenseDialog() {
   const id = useId();
   const [open, setOpen] = useState(false);
+  const { activeProjectId } = useProjectStore();
+  const { mutate: create, isPending } = useCreateExpense(activeProjectId);
+
   const {
     register,
     control,
@@ -58,16 +79,42 @@ export function AddExpenseDialog() {
     formState: { errors },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: { description: "", amount: "", category: "", vendor: "", date: undefined },
+    defaultValues: {
+      description: "",
+      amount: "",
+      category: "",
+      payee: "",
+      payment_method: "cash",
+      date: undefined,
+    },
   });
 
   const onSubmit = (values: FormValues) => {
-    toast.success(
-      `Expense recorded — ${formatCurrency(Number(values.amount))} to ${values.category}`,
-      { description: `${values.description} · ${values.vendor}` }
+    if (!activeProjectId) {
+      toast.error("Select a project first from the Projects page");
+      return;
+    }
+    create(
+      {
+        project: activeProjectId,
+        category: values.category as
+          "materials" | "labor" | "design" | "permits" | "equipment" | "misc",
+        description: values.description,
+        amount: Number(values.amount),
+        date: values.date.toISOString().slice(0, 10),
+        payee: values.payee,
+        payment_method: values.payment_method as "cash" | "cheque" | "bank_transfer" | "upi",
+      },
+      {
+        onSuccess: () => {
+          toast.success(`Expense recorded — ${formatCurrency(Number(values.amount))}`, {
+            description: values.description,
+          });
+          reset();
+          setOpen(false);
+        },
+      }
     );
-    reset();
-    setOpen(false);
   };
 
   return (
@@ -86,14 +133,18 @@ export function AddExpenseDialog() {
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Add expense</DialogTitle>
-          <DialogDescription>Record a new expense for Willow Creek Residence.</DialogDescription>
+          <DialogDescription>
+            {activeProjectId
+              ? "Record a new expense for the active project."
+              : "Select a project first from the Projects page."}
+          </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor={`${id}-description`}>Description</Label>
             <Input
               id={`${id}-description`}
-              placeholder="e.g. Kitchen cabinetry deposit"
+              placeholder="e.g. Foundation concrete pour"
               {...register("description")}
             />
             <FieldError message={errors.description?.message} />
@@ -132,12 +183,12 @@ export function AddExpenseDialog() {
                 render={({ field }) => (
                   <Select onValueChange={field.onChange} value={field.value}>
                     <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Select category" />
+                      <SelectValue placeholder="Select" />
                     </SelectTrigger>
                     <SelectContent>
-                      {expenseCategories.map((cat) => (
-                        <SelectItem key={cat} value={cat}>
-                          {cat}
+                      {CATEGORIES.map((cat) => (
+                        <SelectItem key={cat.value} value={cat.value}>
+                          {cat.label}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -147,21 +198,41 @@ export function AddExpenseDialog() {
               <FieldError message={errors.category?.message} />
             </div>
             <div className="space-y-2">
-              <Label htmlFor={`${id}-vendor`}>Vendor</Label>
-              <Input
-                id={`${id}-vendor`}
-                placeholder="e.g. Sharma Plumbing"
-                {...register("vendor")}
+              <Label>Payment method</Label>
+              <Controller
+                control={control}
+                name="payment_method"
+                render={({ field }) => (
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {PAYMENT_METHODS.map((m) => (
+                        <SelectItem key={m.value} value={m.value}>
+                          {m.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
               />
-              <FieldError message={errors.vendor?.message} />
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor={`${id}-payee`}>Vendor / Payee (optional)</Label>
+            <Input id={`${id}-payee`} placeholder="e.g. Sharma Plumbing" {...register("payee")} />
           </div>
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>
               Cancel
             </Button>
-            <Button type="submit">Add expense</Button>
+            <Button type="submit" disabled={isPending || !activeProjectId}>
+              {isPending && <Loader2 className="size-4 animate-spin" />}
+              Add expense
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>
