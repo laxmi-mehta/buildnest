@@ -20,6 +20,8 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { login } from "@/lib/api/endpoints/auth";
+import { apiErrorMessage } from "@/lib/api/client";
+import { saveTokens } from "@/lib/auth";
 
 const schema = z.object({
   email: z.email("Enter a valid email address"),
@@ -36,9 +38,14 @@ export default function LoginPage() {
   });
 
   const onSubmit = async (values: FormValues) => {
-    await login(values);
-    toast.success("Welcome back!");
-    router.push("/dashboard");
+    try {
+      const tokens = await login(values);
+      saveTokens(tokens);
+      toast.success("Welcome back!");
+      router.push("/dashboard");
+    } catch (error) {
+      toast.error(apiErrorMessage(error, "Invalid email or password"));
+    }
   };
 
   return (

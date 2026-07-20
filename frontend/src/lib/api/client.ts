@@ -69,6 +69,20 @@ export function mockResponse<T>(data: T, delayMs = 350): Promise<T> {
   return new Promise((resolve) => setTimeout(() => resolve(structuredClone(data)), delayMs));
 }
 
+/** Human-readable message from a thrown ApiError (DRF error shapes). */
+export function apiErrorMessage(error: unknown, fallback = "Something went wrong"): string {
+  if (!(error instanceof ApiError)) return fallback;
+  const details = error.details as Record<string, unknown> | undefined;
+  if (!details) return fallback;
+  if (typeof details.detail === "string") return details.detail;
+  // Field errors: {"email": ["already exists"]} → "email: already exists"
+  const [field, messages] = Object.entries(details)[0] ?? [];
+  if (field && Array.isArray(messages) && messages.length) {
+    return `${field}: ${messages[0]}`;
+  }
+  return fallback;
+}
+
 /** Standard paginated envelope the DRF backend will return. */
 export interface Paginated<T> {
   count: number;

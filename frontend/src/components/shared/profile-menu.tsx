@@ -15,13 +15,14 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { currentUser } from "@/features/settings/data";
+import { clearTokens } from "@/lib/auth";
 import { getInitials } from "@/lib/utils";
 
 export function ProfileMenu() {
   const router = useRouter();
 
   const logout = () => {
-    // Real session teardown arrives with the auth integration.
+    clearTokens();
     toast.success("Signed out");
     router.push("/login");
   };

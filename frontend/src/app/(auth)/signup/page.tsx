@@ -19,6 +19,8 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { signup } from "@/lib/api/endpoints/auth";
+import { apiErrorMessage } from "@/lib/api/client";
+import { saveTokens } from "@/lib/auth";
 
 const schema = z
   .object({
@@ -42,9 +44,18 @@ export default function SignupPage() {
   });
 
   const onSubmit = async (values: FormValues) => {
-    await signup({ fullName: values.fullName, email: values.email, password: values.password });
-    toast.success("Account created — verify your email to continue.");
-    router.push("/verify-email");
+    try {
+      const res = await signup({
+        fullName: values.fullName,
+        email: values.email,
+        password: values.password,
+      });
+      saveTokens(res);
+      toast.success("Account created — verify your email to continue.");
+      router.push("/verify-email");
+    } catch (error) {
+      toast.error(apiErrorMessage(error, "Could not create the account"));
+    }
   };
 
   return (

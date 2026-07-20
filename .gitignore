@@ -11,6 +11,9 @@ dist/
 build/
 staticfiles/
 
+# Local databases
+db.sqlite3
+
 # Env
 .env
 .env.local

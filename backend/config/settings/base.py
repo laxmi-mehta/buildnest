@@ -20,7 +20,7 @@ env = environ.Env(
 )
 environ.Env.read_env(BASE_DIR / ".env")
 
-SECRET_KEY = env("SECRET_KEY", default="insecure-dev-key-change-me")
+SECRET_KEY = env("SECRET_KEY", default="insecure-dev-only-key-change-me-in-production-0000")
 DEBUG = env("DEBUG")
 ALLOWED_HOSTS = env("ALLOWED_HOSTS")
 
@@ -44,6 +44,7 @@ THIRD_PARTY_APPS = [
 
 LOCAL_APPS = [
     "apps.core",
+    "apps.accounts",
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -85,6 +86,8 @@ DATABASES = {
     "default": env.db("DATABASE_URL", default="postgres://buildnest:buildnest@localhost:5432/buildnest"),
 }
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+AUTH_USER_MODEL = "accounts.User"
 
 # ── REST Framework / Auth ───────────────────────────────────────
 
