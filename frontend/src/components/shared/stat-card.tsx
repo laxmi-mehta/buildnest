@@ -30,18 +30,20 @@ export function StatCard({
           {Icon && <Icon className="text-muted-foreground size-4" />}
         </div>
         <p className="mt-2 text-2xl font-semibold tracking-tight tabular-nums">{value}</p>
-        {delta !== undefined && (
+        {(delta !== undefined || deltaLabel) && (
           <p className="mt-1 flex items-center gap-1 text-xs">
-            <span
-              className={cn(
-                "flex items-center gap-0.5 font-medium",
-                positive ? "text-success" : "text-destructive"
-              )}
-            >
-              {positive ? <TrendingUp className="size-3" /> : <TrendingDown className="size-3" />}
-              {positive ? "+" : ""}
-              {delta}%
-            </span>
+            {delta !== undefined && (
+              <span
+                className={cn(
+                  "flex items-center gap-0.5 font-medium",
+                  positive ? "text-success" : "text-destructive"
+                )}
+              >
+                {positive ? <TrendingUp className="size-3" /> : <TrendingDown className="size-3" />}
+                {positive ? "+" : ""}
+                {delta}%
+              </span>
+            )}
             {deltaLabel && <span className="text-muted-foreground">{deltaLabel}</span>}
           </p>
         )}
