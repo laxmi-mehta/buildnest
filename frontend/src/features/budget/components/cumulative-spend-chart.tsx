@@ -10,48 +10,63 @@ import {
   ChartTooltipContent,
   type ChartConfig,
 } from "@/components/ui/chart";
-import { cumulativeSpend } from "@/features/budget/data";
+import type { MonthlySpend } from "@/lib/api/endpoints/budget";
 import { formatCompactNumber } from "@/lib/utils";
 
+const MONTH_LABELS = [
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
+];
+
 const config = {
-  planned: { label: "Planned", color: "var(--chart-1)" },
-  actual: { label: "Actual", color: "var(--chart-3)" },
+  cumulative: { label: "Cumulative spend", color: "var(--chart-1)" },
 } satisfies ChartConfig;
 
-export function CumulativeSpendChart() {
+interface Props {
+  data: MonthlySpend[];
+}
+
+export function CumulativeSpendChart({ data }: Props) {
+  const chartData = data.map((row) => ({
+    label: `${MONTH_LABELS[row.month - 1]} '${String(row.year).slice(-2)}`,
+    cumulative: Number(row.cumulative),
+  }));
+
   return (
     <Card>
       <CardHeader>
         <CardTitle>Cumulative spend</CardTitle>
-        <CardDescription>Planned vs actual, Jan – Jul 2026</CardDescription>
+        <CardDescription>Actual spend over time</CardDescription>
       </CardHeader>
       <CardContent>
         <ChartContainer config={config} className="h-64 w-full">
-          <AreaChart data={cumulativeSpend}>
+          <AreaChart data={chartData}>
             <CartesianGrid vertical={false} strokeDasharray="3 3" />
-            <XAxis dataKey="month" tickLine={false} axisLine={false} tickMargin={8} />
+            <XAxis dataKey="label" tickLine={false} axisLine={false} tickMargin={8} />
             <YAxis
               tickLine={false}
               axisLine={false}
               tickMargin={8}
-              tickFormatter={(v: number) => `$${formatCompactNumber(v)}`}
+              tickFormatter={(v: number) => `₹${formatCompactNumber(v)}`}
             />
             <ChartTooltip content={<ChartTooltipContent />} />
             <ChartLegend content={<ChartLegendContent />} />
             <Area
               type="monotone"
-              dataKey="planned"
-              stroke="var(--color-planned)"
-              fill="var(--color-planned)"
-              fillOpacity={0.12}
-              strokeWidth={2}
-            />
-            <Area
-              type="monotone"
-              dataKey="actual"
-              stroke="var(--color-actual)"
-              fill="var(--color-actual)"
-              fillOpacity={0.2}
+              dataKey="cumulative"
+              stroke="var(--color-cumulative)"
+              fill="var(--color-cumulative)"
+              fillOpacity={0.15}
               strokeWidth={2}
             />
           </AreaChart>
