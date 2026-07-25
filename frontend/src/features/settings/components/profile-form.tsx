@@ -1,10 +1,11 @@
 "use client";
 
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { toast } from "sonner";
 import { Camera } from "lucide-react";
+import { toast } from "sonner";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -24,29 +25,33 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { currentUser } from "@/features/settings/data";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useProfile, useUpdateProfile } from "@/features/settings/hooks";
 import { getInitials } from "@/lib/utils";
 
 const schema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
-  email: z.email("Enter a valid email address"),
-  location: z.string().min(2, "Enter a city and state"),
 });
 
 type FormValues = z.infer<typeof schema>;
 
 export function ProfileForm() {
+  const { data, isLoading } = useProfile();
+  const { mutate, isPending } = useUpdateProfile();
+
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: {
-      name: currentUser.name,
-      email: currentUser.email,
-      location: currentUser.location,
-    },
+    defaultValues: { name: "" },
   });
 
-  const onSubmit = () => {
-    toast.success("Profile updated");
+  useEffect(() => {
+    if (data) {
+      form.reset({ name: data.full_name ?? "" });
+    }
+  }, [data, form]);
+
+  const onSubmit = (values: FormValues) => {
+    mutate({ full_name: values.name }, { onSuccess: () => toast.success("Profile updated") });
   };
 
   return (
@@ -60,7 +65,9 @@ export function ProfileForm() {
       <CardContent className="space-y-6">
         <div className="flex items-center gap-4">
           <Avatar className="size-16">
-            <AvatarFallback className="text-lg">{getInitials(currentUser.name)}</AvatarFallback>
+            <AvatarFallback className="text-lg">
+              {isLoading ? "…" : getInitials(data?.full_name ?? "")}
+            </AvatarFallback>
           </Avatar>
           <div className="space-y-1.5">
             <Button
@@ -74,53 +81,40 @@ export function ProfileForm() {
           </div>
         </div>
 
-        <Form {...form}>
-          <form id="profile-form" onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Full name</FormLabel>
-                  <FormControl>
-                    <Input autoComplete="name" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="email"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Email</FormLabel>
-                  <FormControl>
-                    <Input type="email" autoComplete="email" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="location"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Location</FormLabel>
-                  <FormControl>
-                    <Input placeholder="City, State" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </form>
-        </Form>
+        {isLoading ? (
+          <div className="space-y-4">
+            <Skeleton className="h-9 w-full" />
+            <Skeleton className="h-9 w-full" />
+          </div>
+        ) : (
+          <Form {...form}>
+            <form id="profile-form" onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Full name</FormLabel>
+                    <FormControl>
+                      <Input autoComplete="name" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormItem>
+                <FormLabel>Email</FormLabel>
+                <FormControl>
+                  <Input type="email" value={data?.email ?? ""} readOnly disabled />
+                </FormControl>
+              </FormItem>
+            </form>
+          </Form>
+        )}
       </CardContent>
       <CardFooter className="justify-end">
-        <Button type="submit" form="profile-form" size="sm">
-          Save changes
+        <Button type="submit" form="profile-form" size="sm" disabled={isLoading || isPending}>
+          {isPending ? "Saving…" : "Save changes"}
         </Button>
       </CardFooter>
     </Card>

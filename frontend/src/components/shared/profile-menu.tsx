@@ -14,12 +14,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { currentUser } from "@/features/settings/data";
+import { useProfile } from "@/features/settings/hooks";
 import { clearTokens } from "@/lib/auth";
 import { getInitials } from "@/lib/utils";
 
 export function ProfileMenu() {
   const router = useRouter();
+  const { data } = useProfile();
 
   const logout = () => {
     clearTokens();
@@ -27,21 +28,24 @@ export function ProfileMenu() {
     router.push("/login");
   };
 
+  const displayName = data?.full_name ?? "Account";
+  const displayEmail = data?.email ?? "";
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="icon" className="rounded-full" aria-label="Account menu">
           <Avatar className="size-7">
             <AvatarFallback className="text-[11px] font-medium">
-              {getInitials(currentUser.name)}
+              {getInitials(displayName)}
             </AvatarFallback>
           </Avatar>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
         <DropdownMenuLabel>
-          <p className="text-sm font-medium">{currentUser.name}</p>
-          <p className="text-muted-foreground text-xs font-normal">{currentUser.email}</p>
+          <p className="text-sm font-medium">{displayName}</p>
+          <p className="text-muted-foreground text-xs font-normal">{displayEmail}</p>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
