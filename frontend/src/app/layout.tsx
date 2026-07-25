@@ -1,10 +1,21 @@
 import type { Metadata } from "next";
-import { GeistSans } from "geist/font/sans";
-import { GeistMono } from "geist/font/mono";
+import localFont from "next/font/local";
 import "./globals.css";
 import { AppProviders } from "@/providers";
 import { APP_DESCRIPTION, APP_NAME, APP_TAGLINE } from "@/lib/constants";
 import { env } from "@/lib/env";
+
+const GeistSans = localFont({
+  src: "./fonts/GeistSans.woff2",
+  variable: "--font-geist-sans",
+  weight: "100 900",
+});
+
+const GeistMono = localFont({
+  src: "./fonts/GeistMono.woff2",
+  variable: "--font-geist-mono",
+  weight: "100 900",
+});
 
 export const metadata: Metadata = {
   metadataBase: new URL(env.appUrl),
