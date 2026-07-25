@@ -2,7 +2,7 @@ from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from .serializers import SignupSerializer, UserSerializer
+from .serializers import ProfileSerializer, SignupSerializer, UserSerializer
 
 
 class SignupView(generics.CreateAPIView):
@@ -31,6 +31,17 @@ class MeView(generics.RetrieveAPIView):
 
     serializer_class = UserSerializer
     permission_classes = [permissions.IsAuthenticated]
+
+    def get_object(self):
+        return self.request.user
+
+
+class ProfileView(generics.RetrieveUpdateAPIView):
+    """GET/PATCH /api/v1/profiles/ — retrieve or update the authenticated user's profile."""
+
+    serializer_class = ProfileSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    http_method_names = ["get", "patch"]
 
     def get_object(self):
         return self.request.user
