@@ -74,7 +74,7 @@ export default function SignupPage() {
               <FormItem>
                 <FormLabel>Full name</FormLabel>
                 <FormControl>
-                  <Input placeholder="Arjun Mehta" autoComplete="name" {...field} />
+                  <Input placeholder="Your full name" autoComplete="name" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>

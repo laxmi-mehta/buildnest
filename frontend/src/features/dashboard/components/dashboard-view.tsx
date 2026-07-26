@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   addDays,
@@ -34,6 +34,7 @@ import { useExpenses } from "@/features/expenses/hooks";
 import { useTasks } from "@/features/tasks/hooks";
 import { useContractors } from "@/features/contractors/hooks";
 import { useMilestones } from "@/features/milestones/hooks";
+import { useProfile } from "@/features/settings/hooks";
 import { useProjectStore } from "@/lib/store/project-store";
 import { cn, formatCurrency } from "@/lib/utils";
 import type { ApiExpense } from "@/lib/api/types";
@@ -70,7 +71,7 @@ const MILESTONE_TONE: Record<string, string> = {
   pending: "bg-muted text-muted-foreground",
 };
 
-function getGreeting() {
+function getGreetingPrefix() {
   const h = new Date().getHours();
   if (h < 12) return "Good morning";
   if (h < 18) return "Good afternoon";
@@ -101,6 +102,11 @@ function computeMonthlySpend(
 
 export function DashboardView() {
   const { activeProjectId } = useProjectStore();
+  const { data: profile } = useProfile();
+  const [greeting, setGreeting] = useState<string>("");
+  useEffect(() => {
+    setGreeting(getGreetingPrefix());
+  }, []);
 
   const { data: projectsResp } = useProjects();
   const { data: expensesResp, isLoading: loadingExpenses } = useExpenses(activeProjectId);
@@ -196,7 +202,11 @@ export function DashboardView() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title={getGreeting()}
+        title={
+          greeting
+            ? `${greeting}${profile?.full_name ? `, ${profile.full_name.split(" ")[0]}` : ""}`
+            : ""
+        }
         description={descriptionParts.join(" · ")}
         actions={
           activeProjectId ? (

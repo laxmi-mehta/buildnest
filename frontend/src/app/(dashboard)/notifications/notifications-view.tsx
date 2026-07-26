@@ -21,6 +21,7 @@ import { PageHeader } from "@/components/shared/page-header";
 import type { ApiNotification } from "@/lib/api/endpoints/notifications";
 import type { AppNotification, NotificationKind } from "@/features/notifications/types";
 import { useNotifications } from "@/features/notifications/hooks";
+import { useProjectStore } from "@/lib/store/project-store";
 import { cn, timeAgo } from "@/lib/utils";
 
 const kindIcon: Record<NotificationKind, LucideIcon> = {
@@ -130,7 +131,8 @@ function NotificationList({
 }
 
 export function NotificationsView() {
-  const { data: apiData, isLoading } = useNotifications();
+  const activeProjectId = useProjectStore((s) => s.activeProjectId);
+  const { data: apiData, isLoading } = useNotifications(activeProjectId);
   const [items, setItems] = useState<AppNotification[]>([]);
 
   useEffect(() => {

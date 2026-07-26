@@ -2,13 +2,14 @@ import { useQuery } from "@tanstack/react-query";
 import * as api from "@/lib/api/endpoints/notifications";
 
 export const notificationKeys = {
-  all: ["notifications"] as const,
+  list: (projectId: number | null) => ["notifications", projectId] as const,
 };
 
-export function useNotifications() {
+export function useNotifications(projectId: number | null) {
   return useQuery({
-    queryKey: notificationKeys.all,
-    queryFn: api.getNotifications,
-    staleTime: 30_000,
+    queryKey: notificationKeys.list(projectId),
+    queryFn: () => api.getNotifications(projectId!),
+    enabled: projectId !== null,
+    staleTime: 60_000,
   });
 }

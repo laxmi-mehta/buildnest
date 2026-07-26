@@ -57,7 +57,7 @@ export const navigation: NavSection[] = [
       { title: "Materials", href: "/materials", icon: Package },
       { title: "Contractors", href: "/contractors", icon: HardHat },
       { title: "Timeline", href: "/timeline", icon: GanttChartSquare },
-      { title: "Tasks", href: "/tasks", icon: ListTodo, badge: "8" },
+      { title: "Tasks", href: "/tasks", icon: ListTodo },
       { title: "Milestones", href: "/milestones", icon: Milestone },
     ],
   },
@@ -71,7 +71,7 @@ export const navigation: NavSection[] = [
 ];
 
 export const secondaryNavigation: NavItem[] = [
-  { title: "Notifications", href: "/notifications", icon: Bell, badge: "4" },
+  { title: "Notifications", href: "/notifications", icon: Bell },
   { title: "Settings", href: "/settings", icon: Settings },
   { title: "Help", href: "/help", icon: CircleHelp },
 ];

@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
@@ -49,11 +50,14 @@ function SidebarLink({ item, collapsed }: { item: NavItem; collapsed: boolean })
 export function Sidebar() {
   const collapsed = useUiStore((s) => s.sidebarCollapsed);
   const toggle = useUiStore((s) => s.toggleSidebar);
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
 
   return (
     <aside
       className={cn(
-        "bg-sidebar border-sidebar-border sticky top-0 hidden h-dvh shrink-0 flex-col border-r transition-[width] duration-200 ease-out md:flex",
+        "bg-sidebar border-sidebar-border sticky top-0 hidden h-dvh shrink-0 flex-col border-r md:flex",
+        mounted && "transition-[width] duration-200 ease-out",
         collapsed ? "w-14" : "w-60"
       )}
     >

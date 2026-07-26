@@ -10,6 +10,6 @@ export interface ApiNotification {
   read: boolean;
 }
 
-export function getNotifications(): Promise<ApiNotification[]> {
-  return apiClient<ApiNotification[]>("/notifications/");
+export function getNotifications(projectId: number): Promise<ApiNotification[]> {
+  return apiClient<ApiNotification[]>(`/projects/${projectId}/notifications/`);
 }
