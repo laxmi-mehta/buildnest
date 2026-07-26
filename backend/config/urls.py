@@ -3,6 +3,8 @@
 API routes are versioned under /api/v1/. Feature apps register their own
 urls modules here as they are implemented.
 """
+from django.conf import settings
+from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
@@ -18,8 +20,10 @@ urlpatterns = [
     path("api/v1/", include("apps.milestones.urls")),
     path("api/v1/", include("apps.materials.urls")),
     path("api/v1/", include("apps.contractors.urls")),
+    path("api/v1/", include("apps.documents.urls")),
+    path("api/v1/", include("apps.photos.urls")),
     path("api/v1/", include("apps.projects.notification_urls")),
     # OpenAPI schema + interactive docs
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
     path("api/docs/", SpectacularSwaggerView.as_view(url_name="schema"), name="swagger-ui"),
-]
+] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
