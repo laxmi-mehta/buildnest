@@ -8,14 +8,20 @@ import {
   ChartTooltipContent,
   type ChartConfig,
 } from "@/components/ui/chart";
-import { weeklySpend } from "@/features/analytics/data";
+import type { WeeklySpend } from "@/lib/api/endpoints/analytics";
 import { formatCompactNumber } from "@/lib/utils";
 
 const config = {
   spend: { label: "Spend", color: "var(--chart-1)" },
 } satisfies ChartConfig;
 
-export function SpendTrendChart() {
+interface Props {
+  data: WeeklySpend[];
+}
+
+export function SpendTrendChart({ data }: Props) {
+  const chartData = data.map((row) => ({ week: row.week, spend: Number(row.spent) }));
+
   return (
     <Card>
       <CardHeader>
@@ -24,14 +30,14 @@ export function SpendTrendChart() {
       </CardHeader>
       <CardContent>
         <ChartContainer config={config} className="h-64 w-full">
-          <AreaChart data={weeklySpend}>
+          <AreaChart data={chartData}>
             <CartesianGrid vertical={false} strokeDasharray="3 3" />
             <XAxis dataKey="week" tickLine={false} axisLine={false} tickMargin={8} />
             <YAxis
               tickLine={false}
               axisLine={false}
               tickMargin={8}
-              tickFormatter={(v: number) => `$${formatCompactNumber(v)}`}
+              tickFormatter={(v: number) => `₹${formatCompactNumber(v)}`}
             />
             <ChartTooltip content={<ChartTooltipContent />} />
             <Area

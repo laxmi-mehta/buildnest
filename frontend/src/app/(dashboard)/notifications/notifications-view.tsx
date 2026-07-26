@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   CheckCheck,
   CircleDollarSign,
@@ -14,11 +14,13 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { EmptyState } from "@/components/shared/empty-state";
 import { PageHeader } from "@/components/shared/page-header";
-import { notifications as seed } from "@/features/notifications/data";
+import type { ApiNotification } from "@/lib/api/endpoints/notifications";
 import type { AppNotification, NotificationKind } from "@/features/notifications/types";
+import { useNotifications } from "@/features/notifications/hooks";
 import { cn, timeAgo } from "@/lib/utils";
 
 const kindIcon: Record<NotificationKind, LucideIcon> = {
@@ -30,18 +32,24 @@ const kindIcon: Record<NotificationKind, LucideIcon> = {
   system: Info,
 };
 
-/**
- * Dummy data is static, so anchor "now" to the newest entry — keeps the
- * Today/Earlier split and relative times stable until the real API lands.
- */
-const referenceNow = new Date(Math.max(...seed.map((n) => new Date(n.createdAt).getTime())));
+function toAppNotification(n: ApiNotification): AppNotification {
+  return {
+    id: n.id,
+    kind: n.kind,
+    title: n.title,
+    body: n.body,
+    createdAt: n.created_at,
+    read: n.read,
+  };
+}
 
 function isToday(dateString: string) {
   const date = new Date(dateString);
+  const now = new Date();
   return (
-    date.getFullYear() === referenceNow.getFullYear() &&
-    date.getMonth() === referenceNow.getMonth() &&
-    date.getDate() === referenceNow.getDate()
+    date.getFullYear() === now.getFullYear() &&
+    date.getMonth() === now.getMonth() &&
+    date.getDate() === now.getDate()
   );
 }
 
@@ -73,9 +81,7 @@ function NotificationRow({
           )}
         </div>
         <p className="text-muted-foreground line-clamp-2 text-sm">{notification.body}</p>
-        <p className="text-muted-foreground text-xs">
-          {timeAgo(notification.createdAt, referenceNow)}
-        </p>
+        <p className="text-muted-foreground text-xs">{timeAgo(notification.createdAt)}</p>
       </div>
     </button>
   );
@@ -93,18 +99,17 @@ function NotificationList({
       <EmptyState
         icon={CheckCheck}
         title="You're all caught up"
-        description="New notifications about your build will show up here."
+        description="Overdue tasks, delayed milestones, and budget alerts will appear here."
       />
     );
   }
 
   const today = items.filter((n) => isToday(n.createdAt));
   const earlier = items.filter((n) => !isToday(n.createdAt));
-
   const groups = [
     { label: "Today", entries: today },
     { label: "Earlier", entries: earlier },
-  ].filter((group) => group.entries.length > 0);
+  ].filter((g) => g.entries.length > 0);
 
   return (
     <div className="space-y-6">
@@ -114,8 +119,8 @@ function NotificationList({
             {group.label}
           </h2>
           <Card className="gap-0 divide-y overflow-hidden py-0">
-            {group.entries.map((notification) => (
-              <NotificationRow key={notification.id} notification={notification} onRead={onRead} />
+            {group.entries.map((n) => (
+              <NotificationRow key={n.id} notification={n} onRead={onRead} />
             ))}
           </Card>
         </div>
@@ -125,7 +130,13 @@ function NotificationList({
 }
 
 export function NotificationsView() {
-  const [items, setItems] = useState<AppNotification[]>(seed);
+  const { data: apiData, isLoading } = useNotifications();
+  const [items, setItems] = useState<AppNotification[]>([]);
+
+  useEffect(() => {
+    if (apiData) setItems(apiData.map(toAppNotification));
+  }, [apiData]);
+
   const unread = items.filter((n) => !n.read);
 
   const markRead = (id: string) =>
@@ -137,7 +148,7 @@ export function NotificationsView() {
     <div className="space-y-6">
       <PageHeader
         title="Notifications"
-        description="Updates about budget, tasks, documents, and contractors."
+        description="Overdue tasks, delayed milestones, and budget alerts."
         actions={
           <Button variant="outline" size="sm" onClick={markAllRead} disabled={unread.length === 0}>
             <CheckCheck className="size-4" /> Mark all as read
@@ -145,25 +156,33 @@ export function NotificationsView() {
         }
       />
 
-      <Tabs defaultValue="all">
-        <TabsList>
-          <TabsTrigger value="all">All</TabsTrigger>
-          <TabsTrigger value="unread">
-            Unread
-            {unread.length > 0 && (
-              <Badge variant="secondary" className="px-1.5 tabular-nums">
-                {unread.length}
-              </Badge>
-            )}
-          </TabsTrigger>
-        </TabsList>
-        <TabsContent value="all" className="mt-4">
-          <NotificationList items={items} onRead={markRead} />
-        </TabsContent>
-        <TabsContent value="unread" className="mt-4">
-          <NotificationList items={unread} onRead={markRead} />
-        </TabsContent>
-      </Tabs>
+      {isLoading ? (
+        <div className="space-y-3">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <Skeleton key={i} className="h-16 rounded-xl" />
+          ))}
+        </div>
+      ) : (
+        <Tabs defaultValue="all">
+          <TabsList>
+            <TabsTrigger value="all">All</TabsTrigger>
+            <TabsTrigger value="unread">
+              Unread
+              {unread.length > 0 && (
+                <Badge variant="secondary" className="px-1.5 tabular-nums">
+                  {unread.length}
+                </Badge>
+              )}
+            </TabsTrigger>
+          </TabsList>
+          <TabsContent value="all" className="mt-4">
+            <NotificationList items={items} onRead={markRead} />
+          </TabsContent>
+          <TabsContent value="unread" className="mt-4">
+            <NotificationList items={unread} onRead={markRead} />
+          </TabsContent>
+        </Tabs>
+      )}
     </div>
   );
 }

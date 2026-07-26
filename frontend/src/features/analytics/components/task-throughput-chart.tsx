@@ -10,14 +10,18 @@ import {
   ChartTooltipContent,
   type ChartConfig,
 } from "@/components/ui/chart";
-import { taskThroughput } from "@/features/analytics/data";
+import type { TaskThroughput } from "@/lib/api/endpoints/analytics";
 
 const config = {
   created: { label: "Created", color: "var(--chart-2)" },
   completed: { label: "Completed", color: "var(--chart-1)" },
 } satisfies ChartConfig;
 
-export function TaskThroughputChart() {
+interface Props {
+  data: TaskThroughput[];
+}
+
+export function TaskThroughputChart({ data }: Props) {
   return (
     <Card>
       <CardHeader>
@@ -26,7 +30,7 @@ export function TaskThroughputChart() {
       </CardHeader>
       <CardContent>
         <ChartContainer config={config} className="h-64 w-full">
-          <BarChart data={taskThroughput} barGap={4}>
+          <BarChart data={data} barGap={4}>
             <CartesianGrid vertical={false} strokeDasharray="3 3" />
             <XAxis dataKey="week" tickLine={false} axisLine={false} tickMargin={8} />
             <YAxis tickLine={false} axisLine={false} tickMargin={8} allowDecimals={false} />

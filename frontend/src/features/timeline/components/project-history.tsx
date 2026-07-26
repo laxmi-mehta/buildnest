@@ -12,8 +12,7 @@ import {
 } from "@/components/ui/select";
 import { EmptyState } from "@/components/shared/empty-state";
 import { Timeline, type TimelineEntry } from "@/components/shared/timeline";
-import { historyEntries, historyMonths } from "@/features/timeline/data";
-import type { HistoryCategory } from "@/features/timeline/types";
+import type { ApiHistoryEntry, HistoryCategory } from "@/lib/api/endpoints/timeline";
 
 type Filter = "all" | "milestone" | "expense" | "issue";
 
@@ -31,30 +30,59 @@ const categoryTone: Record<HistoryCategory, TimelineEntry["tone"]> = {
   general: "default",
 };
 
-export function ProjectHistory() {
+const MONTH_NAMES = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+];
+
+function monthLabel(dateStr: string): string {
+  const d = new Date(dateStr + "T00:00:00");
+  return `${MONTH_NAMES[d.getMonth()]} ${d.getFullYear()}`;
+}
+
+function shortDate(dateStr: string): string {
+  const d = new Date(dateStr + "T00:00:00");
+  return `${MONTH_NAMES[d.getMonth()].slice(0, 3)} ${d.getDate()}`;
+}
+
+interface Props {
+  history: ApiHistoryEntry[];
+}
+
+export function ProjectHistory({ history }: Props) {
   const [filter, setFilter] = useState<Filter>("all");
 
   const groups = useMemo(() => {
-    const visible =
-      filter === "all"
-        ? historyEntries
-        : historyEntries.filter((entry) => entry.category === filter);
+    const visible = filter === "all" ? history : history.filter((e) => e.category === filter);
 
-    return historyMonths
-      .map((month) => ({
-        month,
-        entries: visible
-          .filter((entry) => entry.month === month)
-          .map<TimelineEntry>((entry) => ({
-            id: entry.id,
-            title: entry.title,
-            description: entry.description,
-            meta: entry.meta,
-            tone: categoryTone[entry.category],
-          })),
-      }))
-      .filter((group) => group.entries.length > 0);
-  }, [filter]);
+    const monthOrder: string[] = [];
+    const byMonth: Record<string, TimelineEntry[]> = {};
+    for (const entry of visible) {
+      const ml = monthLabel(entry.date);
+      if (!byMonth[ml]) {
+        monthOrder.push(ml);
+        byMonth[ml] = [];
+      }
+      byMonth[ml].push({
+        id: entry.id,
+        title: entry.title,
+        description: entry.description,
+        meta: shortDate(entry.date),
+        tone: categoryTone[entry.category] ?? "default",
+      });
+    }
+    return monthOrder.map((month) => ({ month, entries: byMonth[month] }));
+  }, [history, filter]);
 
   return (
     <Card>
