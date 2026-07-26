@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { ImagePlus } from "lucide-react";
-import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -15,27 +14,49 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { ImageUpload } from "@/components/shared/image-upload";
+import { useProjectStore } from "@/lib/store/project-store";
+import { useUploadPhoto } from "../hooks";
 
 export function UploadPhotosDialog() {
   const [open, setOpen] = useState(false);
   const [files, setFiles] = useState<File[]>([]);
+  const activeProjectId = useProjectStore((s) => s.activeProjectId);
+  const { mutate, isPending } = useUploadPhoto(activeProjectId);
 
-  const handleUpload = () => {
-    toast.success(files.length === 1 ? "1 photo uploaded" : `${files.length} photos uploaded`);
-    setOpen(false);
+  function reset() {
     setFiles([]);
-  };
+  }
+
+  function handleUpload() {
+    if (!files.length || !activeProjectId) return;
+    let completed = 0;
+    files.forEach((file) => {
+      const fd = new FormData();
+      fd.append("project", String(activeProjectId));
+      fd.append("caption", file.name.replace(/\.[^.]+$/, ""));
+      fd.append("file", file);
+      mutate(fd, {
+        onSuccess: () => {
+          completed++;
+          if (completed === files.length) {
+            setOpen(false);
+            reset();
+          }
+        },
+      });
+    });
+  }
 
   return (
     <Dialog
       open={open}
       onOpenChange={(next) => {
         setOpen(next);
-        if (!next) setFiles([]);
+        if (!next) reset();
       }}
     >
       <DialogTrigger asChild>
-        <Button size="sm">
+        <Button size="sm" disabled={!activeProjectId}>
           <ImagePlus className="size-4" /> Upload photos
         </Button>
       </DialogTrigger>
@@ -43,7 +64,7 @@ export function UploadPhotosDialog() {
         <DialogHeader>
           <DialogTitle>Upload photos</DialogTitle>
           <DialogDescription>
-            Add progress photos from the site. They land in the current phase album.
+            Add progress photos from the site. They are grouped by upload month.
           </DialogDescription>
         </DialogHeader>
         <ImageUpload onFiles={setFiles} />
@@ -51,8 +72,8 @@ export function UploadPhotosDialog() {
           <DialogClose asChild>
             <Button variant="outline">Cancel</Button>
           </DialogClose>
-          <Button disabled={files.length === 0} onClick={handleUpload}>
-            Upload {files.length > 0 && `(${files.length})`}
+          <Button disabled={files.length === 0 || isPending} onClick={handleUpload}>
+            {isPending ? "Uploading…" : `Upload${files.length > 0 ? ` (${files.length})` : ""}`}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -36,15 +36,16 @@ export async function apiClient<T>(path: string, options: ApiRequestOptions = {}
   const { body, anonymous, headers, ...rest } = options;
 
   const token = anonymous ? null : getAccessToken();
+  const isFormData = body instanceof FormData;
 
   const response = await fetch(`${env.apiUrl}${path}`, {
     ...rest,
     headers: {
-      "Content-Type": "application/json",
+      ...(isFormData ? {} : { "Content-Type": "application/json" }),
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...headers,
     },
-    body: body !== undefined ? JSON.stringify(body) : undefined,
+    body: isFormData ? body : body !== undefined ? JSON.stringify(body) : undefined,
   });
 
   if (!response.ok) {

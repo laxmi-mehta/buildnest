@@ -6,11 +6,9 @@ import {
   FileSpreadsheet,
   FileText,
   MoreHorizontal,
-  Pencil,
   Trash2,
   type LucideIcon,
 } from "lucide-react";
-import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -21,15 +19,30 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { DataTable, type Column } from "@/components/shared/data-table";
-import { documents, type DocumentCategory, type DocumentItem } from "@/features/documents/data";
+import {
+  formatFileSize,
+  type ApiDocument,
+  type DocumentCategory,
+} from "@/lib/api/endpoints/documents";
 import { cn } from "@/lib/utils";
+import { useDeleteDocument } from "../hooks";
 
 const categoryTone: Record<DocumentCategory, string> = {
-  Permit: "bg-chart-1/20",
-  Contract: "bg-chart-2/20",
-  Invoice: "bg-chart-3/20",
-  Plan: "bg-chart-4/20",
-  Report: "bg-chart-5/20",
+  permit: "bg-chart-1/20",
+  contract: "bg-chart-2/20",
+  invoice: "bg-chart-3/20",
+  plan: "bg-chart-4/20",
+  report: "bg-chart-5/20",
+  other: "bg-muted",
+};
+
+const categoryLabel: Record<DocumentCategory, string> = {
+  permit: "Permit",
+  contract: "Contract",
+  invoice: "Invoice",
+  plan: "Plan",
+  report: "Report",
+  other: "Other",
 };
 
 function typeIcon(name: string): LucideIcon {
@@ -38,82 +51,100 @@ function typeIcon(name: string): LucideIcon {
   return FileText;
 }
 
-const columns: Column<DocumentItem>[] = [
-  {
-    key: "name",
-    header: "Name",
-    className: "max-w-72",
-    cell: (row) => {
-      const Icon = typeIcon(row.name);
-      return (
-        <div className="flex items-center gap-2.5">
-          <Icon className="text-muted-foreground size-4 shrink-0" />
-          <span className="truncate font-medium">{row.name}</span>
-        </div>
-      );
-    },
-  },
-  {
-    key: "category",
-    header: "Category",
-    cell: (row) => (
-      <Badge className={cn("text-foreground border-transparent", categoryTone[row.category])}>
-        {row.category}
-      </Badge>
-    ),
-  },
-  {
-    key: "size",
-    header: "Size",
-    className: "text-muted-foreground tabular-nums",
-  },
-  {
-    key: "uploadedBy",
-    header: "Uploaded by",
-    className: "text-muted-foreground",
-  },
-  {
-    key: "date",
-    header: "Date",
-    className: "text-muted-foreground whitespace-nowrap",
-  },
-  {
-    key: "actions",
-    header: "",
-    className: "w-10 text-right",
-    cell: (row) => (
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="icon-sm" aria-label={`Actions for ${row.name}`}>
-            <MoreHorizontal className="size-4" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          <DropdownMenuItem onClick={() => toast.success(`Downloading “${row.name}”`)}>
-            <Download className="size-4" /> Download
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => toast.success(`Rename requested for “${row.name}”`)}>
-            <Pencil className="size-4" /> Rename
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem
-            variant="destructive"
-            onClick={() => toast.success(`“${row.name}” deleted`)}
-          >
-            <Trash2 className="size-4" /> Delete
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    ),
-  },
-];
+function formatDate(iso: string) {
+  return new Date(iso).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
 
-export function DocumentsTable() {
+interface RowActionsProps {
+  doc: ApiDocument;
+  projectId: number | null;
+}
+
+function RowActions({ doc, projectId }: RowActionsProps) {
+  const { mutate: deleteDoc, isPending } = useDeleteDocument(projectId);
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="icon-sm" aria-label={`Actions for ${doc.title}`}>
+          <MoreHorizontal className="size-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem onClick={() => window.open(doc.file_url, "_blank")}>
+          <Download className="size-4" /> Download
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          variant="destructive"
+          disabled={isPending}
+          onClick={() => deleteDoc(doc.id)}
+        >
+          <Trash2 className="size-4" /> Delete
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+interface DocumentsTableProps {
+  documents: ApiDocument[];
+  projectId: number | null;
+}
+
+export function DocumentsTable({ documents, projectId }: DocumentsTableProps) {
+  const columns: Column<ApiDocument>[] = [
+    {
+      key: "title",
+      header: "Name",
+      className: "max-w-72",
+      cell: (row) => {
+        const Icon = typeIcon(row.title);
+        return (
+          <div className="flex items-center gap-2.5">
+            <Icon className="text-muted-foreground size-4 shrink-0" />
+            <span className="truncate font-medium">{row.title}</span>
+          </div>
+        );
+      },
+    },
+    {
+      key: "category",
+      header: "Category",
+      cell: (row) => (
+        <Badge className={cn("text-foreground border-transparent", categoryTone[row.category])}>
+          {categoryLabel[row.category]}
+        </Badge>
+      ),
+    },
+    {
+      key: "file_size",
+      header: "Size",
+      className: "text-muted-foreground tabular-nums",
+      cell: (row) => formatFileSize(row.file_size),
+    },
+    {
+      key: "uploaded_at",
+      header: "Date",
+      className: "text-muted-foreground whitespace-nowrap",
+      cell: (row) => formatDate(row.uploaded_at),
+    },
+    {
+      key: "id",
+      header: "",
+      className: "w-10 text-right",
+      cell: (row) => <RowActions doc={row} projectId={projectId} />,
+    },
+  ];
+
   return (
     <DataTable
       columns={columns}
       data={documents}
-      searchKeys={["name", "category"]}
+      searchKeys={["title", "category"]}
       searchPlaceholder="Search documents…"
     />
   );
