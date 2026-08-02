@@ -33,6 +33,9 @@ export const metadata: Metadata = {
   ],
   authors: [{ name: "BuildNest" }],
   creator: "BuildNest",
+  verification: {
+    google: "VkTDELhrfXkeHE1APJOJ3d2aTYTw0AFxSP16xwMBq8E",
+  },
   openGraph: {
     title: `${APP_NAME} — ${APP_TAGLINE}`,
     description: APP_DESCRIPTION,
