@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -109,8 +108,9 @@ export function NotificationPreferences() {
           </div>
         ))}
       </CardContent>
-      <CardFooter className="justify-end">
-        <Button size="sm" onClick={() => toast.success("Notification preferences saved")}>
+      <CardFooter className="items-center justify-between gap-2">
+        <p className="text-muted-foreground text-xs">Email & push delivery coming soon.</p>
+        <Button size="sm" disabled>
           Save changes
         </Button>
       </CardFooter>

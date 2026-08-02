@@ -68,11 +68,7 @@ export function BudgetView() {
   if (!activeProjectId) {
     return (
       <div className="space-y-6">
-        <PageHeader
-          title="Budget"
-          description="Select a project to view its budget"
-          actions={<AdjustBudgetButton />}
-        />
+        <PageHeader title="Budget" description="Select a project to view its budget" />
         <p className="text-muted-foreground text-sm">No project selected.</p>
       </div>
     );

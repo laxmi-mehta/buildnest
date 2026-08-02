@@ -37,6 +37,19 @@ export function useCreateProject(options?: { onSuccess?: () => void }) {
   });
 }
 
+export function useUpdateProject() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, input }: { id: number; input: Parameters<typeof api.updateProject>[1] }) =>
+      api.updateProject(id, input),
+    onSuccess: (_, { id }) => {
+      qc.invalidateQueries({ queryKey: projectKeys.detail(id) });
+      qc.invalidateQueries({ queryKey: projectKeys.lists() });
+    },
+    onError: (err) => toast.error(apiErrorMessage(err, "Could not update project")),
+  });
+}
+
 export function useDeleteProject() {
   const qc = useQueryClient();
   return useMutation({

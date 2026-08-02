@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
-import { Trash2 } from "lucide-react";
+import { Loader2, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -34,46 +35,64 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { useProject, useUpdateProject, useDeleteProject } from "@/features/projects/hooks";
+import { useProjectStore } from "@/lib/store/project-store";
 
 const schema = z.object({
   projectName: z.string().min(2, "Project name must be at least 2 characters"),
-  address: z.string().min(5, "Enter the full project address"),
-  currency: z.enum(["INR", "USD", "EUR"]),
-  dateFormat: z.enum(["MM/DD/YYYY", "DD/MM/YYYY", "YYYY-MM-DD"]),
+  address: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof schema>;
 
-const currencies = [
-  { value: "INR", label: "INR — Indian Rupee" },
-  { value: "USD", label: "USD — US Dollar" },
-  { value: "EUR", label: "EUR — Euro" },
-] as const;
-
-const dateFormats = ["MM/DD/YYYY", "DD/MM/YYYY", "YYYY-MM-DD"] as const;
-
 export function GeneralSettings() {
+  const router = useRouter();
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const { activeProjectId, setActiveProjectId } = useProjectStore();
+  const { data: project } = useProject(activeProjectId ?? 0);
+  const { mutate: updateProject, isPending: isSaving } = useUpdateProject();
+  const { mutate: deleteProject, isPending: isDeleting } = useDeleteProject();
+
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: {
-      projectName: "Willow Creek Residence",
-      address: "42 Willow Creek Layout, Whitefield, Bengaluru",
-      currency: "INR",
-      dateFormat: "DD/MM/YYYY",
-    },
+    defaultValues: { projectName: "", address: "" },
   });
 
-  const onSubmit = () => {
-    toast.success("Workspace settings saved");
+  useEffect(() => {
+    if (project) {
+      form.reset({ projectName: project.name, address: project.address ?? "" });
+    }
+  }, [project, form]);
+
+  const onSubmit = (values: FormValues) => {
+    if (!activeProjectId) return;
+    updateProject(
+      { id: activeProjectId, input: { name: values.projectName, address: values.address } },
+      { onSuccess: () => toast.success("Workspace settings saved") }
+    );
   };
+
+  const handleDelete = () => {
+    if (!activeProjectId) return;
+    deleteProject(activeProjectId, {
+      onSuccess: () => {
+        setActiveProjectId(null);
+        setDeleteOpen(false);
+        toast.success("Project deleted");
+        router.push("/projects");
+      },
+    });
+  };
+
+  if (!activeProjectId) {
+    return (
+      <Card>
+        <CardContent className="py-8 text-center">
+          <p className="text-muted-foreground text-sm">Select a project to edit its settings.</p>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -94,7 +113,7 @@ export function GeneralSettings() {
                   <FormItem>
                     <FormLabel>Project name</FormLabel>
                     <FormControl>
-                      <Input placeholder="e.g. Willow Creek Residence" {...field} />
+                      <Input placeholder="e.g. My Home Build" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -113,59 +132,10 @@ export function GeneralSettings() {
                   </FormItem>
                 )}
               />
-              <div className="grid gap-4 sm:grid-cols-2">
-                <FormField
-                  control={form.control}
-                  name="currency"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Currency</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Select currency" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {currencies.map((currency) => (
-                            <SelectItem key={currency.value} value={currency.value}>
-                              {currency.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="dateFormat"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Date format</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Select date format" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {dateFormats.map((format) => (
-                            <SelectItem key={format} value={format}>
-                              {format}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
             </CardContent>
             <CardFooter className="mt-4 justify-end">
-              <Button type="submit" size="sm">
+              <Button type="submit" size="sm" disabled={isSaving}>
+                {isSaving && <Loader2 className="size-4 animate-spin" />}
                 Save changes
               </Button>
             </CardFooter>
@@ -182,7 +152,7 @@ export function GeneralSettings() {
           <div className="space-y-0.5">
             <p className="text-sm font-medium">Delete project</p>
             <p className="text-muted-foreground text-sm">
-              Permanently remove Willow Creek Residence and all of its data.
+              Permanently remove {project?.name ?? "this project"} and all of its data.
             </p>
           </div>
           <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
@@ -195,21 +165,16 @@ export function GeneralSettings() {
               <DialogHeader>
                 <DialogTitle>Delete this project?</DialogTitle>
                 <DialogDescription>
-                  This permanently deletes Willow Creek Residence — including expenses, tasks,
-                  documents, and photos. This action cannot be undone.
+                  This permanently deletes {project?.name ?? "this project"} — including expenses,
+                  tasks, documents, and photos. This action cannot be undone.
                 </DialogDescription>
               </DialogHeader>
               <DialogFooter>
                 <DialogClose asChild>
                   <Button variant="outline">Cancel</Button>
                 </DialogClose>
-                <Button
-                  variant="destructive"
-                  onClick={() => {
-                    setDeleteOpen(false);
-                    toast.success("Project deleted");
-                  }}
-                >
+                <Button variant="destructive" onClick={handleDelete} disabled={isDeleting}>
+                  {isDeleting && <Loader2 className="size-4 animate-spin" />}
                   Delete project
                 </Button>
               </DialogFooter>

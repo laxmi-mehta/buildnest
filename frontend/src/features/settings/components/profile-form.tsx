@@ -4,8 +4,7 @@ import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Camera } from "lucide-react";
-import { toast } from "sonner";
+import { User } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -66,19 +65,15 @@ export function ProfileForm() {
         <div className="flex items-center gap-4">
           <Avatar className="size-16">
             <AvatarFallback className="text-lg">
-              {isLoading ? "…" : getInitials(data?.full_name ?? "")}
+              {isLoading ? (
+                "…"
+              ) : data?.full_name ? (
+                getInitials(data.full_name)
+              ) : (
+                <User className="size-6" />
+              )}
             </AvatarFallback>
           </Avatar>
-          <div className="space-y-1.5">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => toast.success("Profile photo updated")}
-            >
-              <Camera className="size-4" /> Change photo
-            </Button>
-            <p className="text-muted-foreground text-xs">JPG or PNG, up to 2MB.</p>
-          </div>
         </div>
 
         {isLoading ? (
