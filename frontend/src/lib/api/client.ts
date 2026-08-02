@@ -1,15 +1,6 @@
 import { env } from "@/lib/env";
 import { STORAGE_KEYS } from "@/lib/constants";
 
-/**
- * API abstraction layer — the ONLY place the app talks to the network.
- *
- * Pages and features import endpoint modules (./endpoints/*), never fetch
- * directly. While the backend is not implemented, endpoint modules resolve
- * dummy data through `mockResponse()`; swapping to the real API changes
- * nothing outside `lib/api/`.
- */
-
 export class ApiError extends Error {
   constructor(
     public status: number,
@@ -32,21 +23,84 @@ function getAccessToken(): string | null {
   return window.localStorage.getItem(STORAGE_KEYS.authToken);
 }
 
+// Prevent multiple concurrent refresh calls
+let refreshPromise: Promise<string | null> | null = null;
+
+async function tryRefreshAccessToken(): Promise<string | null> {
+  if (typeof window === "undefined") return null;
+  const refresh = window.localStorage.getItem(STORAGE_KEYS.refreshToken);
+  if (!refresh) return null;
+
+  if (!refreshPromise) {
+    refreshPromise = fetch(`${env.apiUrl}/auth/refresh/`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ refresh }),
+    })
+      .then(async (res) => {
+        if (!res.ok) {
+          window.localStorage.removeItem(STORAGE_KEYS.authToken);
+          window.localStorage.removeItem(STORAGE_KEYS.refreshToken);
+          window.location.href = "/login";
+          return null;
+        }
+        const data: { access: string } = await res.json();
+        window.localStorage.setItem(STORAGE_KEYS.authToken, data.access);
+        return data.access;
+      })
+      .catch(() => null)
+      .finally(() => {
+        refreshPromise = null;
+      });
+  }
+
+  return refreshPromise;
+}
+
+function buildHeaders(token: string | null, isFormData: boolean, extra?: HeadersInit): HeadersInit {
+  return {
+    ...(isFormData ? {} : { "Content-Type": "application/json" }),
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    ...extra,
+  };
+}
+
 export async function apiClient<T>(path: string, options: ApiRequestOptions = {}): Promise<T> {
   const { body, anonymous, headers, ...rest } = options;
 
   const token = anonymous ? null : getAccessToken();
   const isFormData = body instanceof FormData;
+  const serializedBody = isFormData ? body : body !== undefined ? JSON.stringify(body) : undefined;
 
   const response = await fetch(`${env.apiUrl}${path}`, {
     ...rest,
-    headers: {
-      ...(isFormData ? {} : { "Content-Type": "application/json" }),
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...headers,
-    },
-    body: isFormData ? body : body !== undefined ? JSON.stringify(body) : undefined,
+    headers: buildHeaders(token, isFormData, headers),
+    body: serializedBody,
   });
+
+  // Attempt silent token refresh on 401, then retry once
+  if (response.status === 401 && !anonymous) {
+    const newToken = await tryRefreshAccessToken();
+    if (newToken) {
+      const retry = await fetch(`${env.apiUrl}${path}`, {
+        ...rest,
+        headers: buildHeaders(newToken, isFormData, headers),
+        body: serializedBody,
+      });
+      if (!retry.ok) {
+        let details: unknown;
+        try {
+          details = await retry.json();
+        } catch {
+          details = undefined;
+        }
+        throw new ApiError(retry.status, retry.statusText, details);
+      }
+      if (retry.status === 204) return undefined as T;
+      return (await retry.json()) as T;
+    }
+    // No refresh token — fall through to throw the 401
+  }
 
   if (!response.ok) {
     let details: unknown;

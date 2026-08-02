@@ -28,7 +28,7 @@ export function ProfileMenu() {
     router.push("/login");
   };
 
-  const displayName = data?.full_name ?? "Account";
+  const displayName = data?.full_name ?? "";
   const displayEmail = data?.email ?? "";
 
   return (
@@ -37,14 +37,14 @@ export function ProfileMenu() {
         <Button variant="ghost" size="icon" className="rounded-full" aria-label="Account menu">
           <Avatar className="size-7">
             <AvatarFallback className="text-[11px] font-medium">
-              {getInitials(displayName)}
+              {displayName ? getInitials(displayName) : <User className="size-3.5" />}
             </AvatarFallback>
           </Avatar>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
         <DropdownMenuLabel>
-          <p className="text-sm font-medium">{displayName}</p>
+          <p className="text-sm font-medium">{displayName || "Account"}</p>
           <p className="text-muted-foreground text-xs font-normal">{displayEmail}</p>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
