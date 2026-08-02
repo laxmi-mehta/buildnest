@@ -24,11 +24,26 @@ export const metadata: Metadata = {
     template: `%s · ${APP_NAME}`,
   },
   description: APP_DESCRIPTION,
+  keywords: [
+    "home construction management India",
+    "house building tracker",
+    "construction budget app India",
+    "home building app",
+    "construction project tracker homeowners India",
+  ],
+  authors: [{ name: "BuildNest" }],
+  creator: "BuildNest",
   openGraph: {
     title: `${APP_NAME} — ${APP_TAGLINE}`,
     description: APP_DESCRIPTION,
     siteName: APP_NAME,
     type: "website",
+    locale: "en_IN",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: `${APP_NAME} — ${APP_TAGLINE}`,
+    description: APP_DESCRIPTION,
   },
 };
 

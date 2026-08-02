@@ -1,0 +1,24 @@
+# BuildNest
+
+> Home construction management app for Indian homeowners.
+
+BuildNest is a free web application that helps Indian homeowners plan, track, and manage their home construction projects. It replaces spreadsheets and WhatsApp groups with a single organised workspace.
+
+## What it does
+
+- Budget tracking — set a total budget, log every expense, and see spend by category
+- Task management — create and track construction tasks with priority and due dates
+- Milestone tracking — define phases (foundation, structure, finishing) and mark them complete
+- Contractor management — directory of all contractors with contact details and trade
+- Materials tracking — track orders, deliveries, and installation status
+- Document storage — upload permits, contracts, and invoices
+- Photo log — site progress photos grouped by month
+- Analytics — spend trends, category breakdown, contractor costs
+
+## Who it is for
+
+Indian homeowners who are building or renovating a residential property and want one place to track everything instead of managing it across Excel, WhatsApp, and paper.
+
+## Live app
+
+https://buildnest-saas.vercel.app
