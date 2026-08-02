@@ -17,8 +17,8 @@ export function Navbar() {
 
   // Auto-select the first project if none is stored yet
   useEffect(() => {
-    if (!activeProjectId && projects && projects.length > 0) {
-      setActiveProjectId(projects[0].id);
+    if (!activeProjectId && projects && projects.results.length > 0) {
+      setActiveProjectId(projects.results[0].id);
     }
   }, [projects, activeProjectId, setActiveProjectId]);
 

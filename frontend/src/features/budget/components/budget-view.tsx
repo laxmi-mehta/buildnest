@@ -21,7 +21,6 @@ function deriveAlerts(data: ApiBudget) {
     tone: "warning" | "destructive";
   }[] = [];
   const total = Number(data.total_budget);
-  const spent = Number(data.spent_to_date);
   const remaining = Number(data.remaining);
 
   if (total > 0 && remaining < 0) {

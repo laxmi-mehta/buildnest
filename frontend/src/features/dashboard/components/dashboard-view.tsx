@@ -114,11 +114,11 @@ export function DashboardView() {
   const { data: contractorsResp } = useContractors(activeProjectId);
   const { data: milestonesResp } = useMilestones(activeProjectId);
 
-  const projects = projectsResp?.results ?? [];
-  const expenses = expensesResp?.results ?? [];
-  const tasks = tasksResp?.results ?? [];
-  const contractors = contractorsResp?.results ?? [];
-  const milestones = milestonesResp?.results ?? [];
+  const projects = useMemo(() => projectsResp?.results ?? [], [projectsResp]);
+  const expenses = useMemo(() => expensesResp?.results ?? [], [expensesResp]);
+  const tasks = useMemo(() => tasksResp?.results ?? [], [tasksResp]);
+  const contractors = useMemo(() => contractorsResp?.results ?? [], [contractorsResp]);
+  const milestones = useMemo(() => milestonesResp?.results ?? [], [milestonesResp]);
 
   const activeProject = projects.find((p) => p.id === activeProjectId) ?? null;
   const totalBudget = activeProject?.total_budget ? parseFloat(activeProject.total_budget) : null;

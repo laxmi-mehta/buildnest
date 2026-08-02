@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarRange, FileBarChart, HardHat, Scale } from "lucide-react";
+import { CalendarRange } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
